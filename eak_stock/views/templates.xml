@@ -1,0 +1,26 @@
+<odoo>
+    <data>
+        <template id="report_delivery_inherit" inherit_id="stock.report_delivery_document">
+            <xpath expr="//span[@t-field='o.name']" position="before">
+                <span t-if="o.picking_type_id.code=='outgoing' and partner"><strong>BON DE LIVRAISON N° : </strong></span>
+            </xpath>
+        </template>
+	<template id="account_invoice_inherit" inherit_id="account.report_invoice_document">
+            <xpath expr="//th[@name='th_taxes']" position="attributes">
+                <attribute name="t-if">false</attribute>
+            </xpath>
+            <xpath expr="//th[@name='th_subtotal']" position="replace">
+                 <th name="th_subtotal" class="text-right"><span>Amount</span></th>
+            </xpath>
+            <xpath expr="//tr/t/td[5]" position="attributes">
+                <attribute name="t-if">false</attribute>
+            </xpath>
+            <xpath expr="//tr/t/td[6]" position="replace">
+                <td class="text-right o_price_total">
+                    <span class="text-nowrap" t-field="line.price_subtotal"/>
+                </td>
+            </xpath>
+        </template>
+    </data>
+</odoo>
+
