@@ -23,6 +23,7 @@
         </xpath>
       </field>
     </record>
+      <!--
     <record id="view_warehouse" model="ir.ui.view">
             <field name="name">stock.warehouse</field>
             <field name="model">stock.warehouse</field>
@@ -59,28 +60,6 @@
                     </page>
                 </xpath>
             </field>
-        </record>
-    <record id="form_picking" model="ir.ui.view">
-        <field name="name">stock.picking.form.inherit</field>
-        <field name="model">stock.picking</field>
-        <field name="inherit_id" ref="stock.view_picking_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='show_mark_as_todo']" position="after">
-                <field name="show_transfer" invisible="1"/>
-            </xpath>
-            <xpath expr="//button[@name='button_validate']" position="after">
-                <button name="button_validate" attrs="{'invisible': [('show_transfer', '=', False)]}" string="Transfer" type="object" groups="stock.group_stock_user" class="oe_highlight" data-hotkey="t"/>
-            </xpath>
-            <!--  <xpath expr="//button[@name='action_assign']" position="after">
-                <button name="force_assign" attrs="{'invisible': [('show_check_availability', '=', False)]}" string="Force Availability" type="object" class="oe_highlight" groups="base.group_user"/>
-            </xpath> -->
-            <xpath expr="//field[@name='state']" position="attributes">
-                <attribute name="attrs">{'invisible': [('picking_type_code', '=', 'internal')]}</attribute>
-            </xpath>
-            <xpath expr="//button[@name='action_cancel']" position="before">
-                <field name="transfer_state" attrs="{'invisible': [('picking_type_code', '!=', 'internal')]}" widget="statusbar" statusbar_visible="draft,confirmed,assigned,transfer,done"/>
-            </xpath>
-        </field>
-    </record>
+        </record> -->
   </data>
 </odoo>

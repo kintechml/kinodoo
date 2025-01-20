@@ -5,7 +5,7 @@
                 <span t-if="o.picking_type_id.code=='outgoing' and partner"><strong>BON DE LIVRAISON N° : </strong></span>
             </xpath>
         </template>
-	<template id="account_invoice_inherit" inherit_id="account.report_invoice_document">
+        <template id="account_invoice_inherit" inherit_id="account.report_invoice_document">
             <xpath expr="//th[@name='th_taxes']" position="attributes">
                 <attribute name="t-if">false</attribute>
             </xpath>
