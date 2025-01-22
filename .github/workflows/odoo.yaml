@@ -1,9 +1,6 @@
 name: Odoo CI
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - 17.0
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
