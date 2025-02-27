@@ -27,4 +27,8 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}:17
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}:17
+            ${{ env.REGISTRY }}/${{ github.repository }}:17.0.20241205
+            ${{ env.REGISTRY }}/${{ github.repository }}:17.0.20241205-debian-12
+            ${{ env.REGISTRY }}/${{ github.repository }}:17.0.20241205-debian-12-r0
