@@ -34,33 +34,22 @@ class StockGatePass(models.Model):
         ('expired', 'Expired'),
         ('cancel', 'Cancelled')
     ], string='Status', default='draft', tracking=True, copy=False)
-    gatepass_type_id = fields.Many2one('stock.gatepass.type', 'Gate Pass Type', required=True,
-                                       states={'draft': [('readonly', False)]}, readonly=True)
+    gatepass_type_id = fields.Many2one('stock.gatepass.type', 'Gate Pass Type', required=True)
     is_returnable = fields.Boolean('Is Returnable', related='gatepass_type_id.is_returnable', store=True)
-    partner_id = fields.Many2one('res.partner', 'Partner', required=True,
-                                 states={'draft': [('readonly', False)]}, readonly=True)
-    user_id = fields.Many2one('res.users', 'Responsible', default=lambda self: self.env.user,
-                              states={'draft': [('readonly', False)]}, readonly=True)
-    company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company,
-                                 states={'draft': [('readonly', False)]}, readonly=True)
+    partner_id = fields.Many2one('res.partner', 'Partner', required=True)
+    user_id = fields.Many2one('res.users', 'Responsible', default=lambda self: self.env.user)
+    company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
     source_location_id = fields.Many2one('stock.location', 'Source Location', required=True,
-                                         domain=[('usage', '=', 'internal')],
-                                         states={'draft': [('readonly', False)]}, readonly=True)
-    destination_location_id = fields.Many2one('stock.location', 'Destination Location', required=True,
-                                              states={'draft': [('readonly', False)]}, readonly=True)
-    issue_date = fields.Date('Issue Date', default=fields.Date.context_today,
-                             states={'draft': [('readonly', False)]}, readonly=True)
-    expected_return_date = fields.Date('Expected Return Date',
-                                       states={'draft': [('readonly', False)], 'submit': [('readonly', False)]},
-                                       readonly=True)
+                                         domain=[('usage', '=', 'internal')])
+    destination_location_id = fields.Many2one('stock.location', 'Destination Location', required=True)
+    issue_date = fields.Date('Issue Date', default=fields.Date.context_today)
+    expected_return_date = fields.Date('Expected Return Date')
     actual_return_date = fields.Date('Actual Return Date', readonly=True)
     shipping_policy = fields.Selection([
         ('ship', 'Deliver each product when available'),
         ('direct', 'Deliver all products at once')],
-        string='Shipping Policy', required=True, default='direct',
-        states={'draft': [('readonly', False)]}, readonly=True)
-    move_ids = fields.One2many('stock.move', 'gatepass_id', 'Stock Moves',
-                               states={'draft': [('readonly', False)]}, readonly=True)
+        string='Shipping Policy', required=True, default='direct')
+    move_ids = fields.One2many('stock.move', 'gatepass_id', 'Stock Moves')
     picking_ids = fields.One2many('stock.picking', 'gatepass_id', 'Stock Pickings')
     picking_count = fields.Integer('Pickings', compute='_compute_picking_count')
     return_count = fields.Integer('Returns', compute='_compute_return_count')
@@ -122,7 +111,7 @@ class StockGatePass(models.Model):
         for gatepass in self:
             if not gatepass.move_ids:
                 raise UserError(_('Please add at least one product to continue.'))
-                
+
             # Create picking for delivery
             picking_vals = {
                 'partner_id': gatepass.partner_id.id,
@@ -150,7 +139,7 @@ class StockGatePass(models.Model):
                     'location_dest_id': gatepass.destination_location_id.id,
                     'gatepass_id': gatepass.id,
                 })
-            
+
             gatepass.write({
                 'state': 'confirmed',
                 'approved_by': self.env.user.id,
@@ -161,7 +150,7 @@ class StockGatePass(models.Model):
         self.ensure_one()
         if not self.is_returnable:
             raise UserError(_('This gate pass is not returnable.'))
-            
+
         return {
             'name': _('Create Return'),
             'type': 'ir.actions.act_window',
@@ -202,6 +191,35 @@ class StockGatePass(models.Model):
         ])
         for gate_pass in gate_passes:
             gate_pass.write({'state': 'expired'})
+
+    @api.constrains('is_returnable', 'expected_return_date')
+    def _check_return_date(self):
+        """Enforce return date requirement for returnable gate passes"""
+        for record in self:
+            if record.is_returnable and not record.expected_return_date:
+                raise ValidationError(_("Expected return date is required for returnable gate passes."))
+
+    def _get_fields_write(self, vals):
+        """Implement field-level access control based on state"""
+        editable_fields = set(['message_follower_ids', 'activity_ids'])
+        if self.state == 'draft':
+            # In draft state all fields are editable
+            return True
+        elif self.state == 'submit':
+            # Limited fields are editable in submitted state
+            editable_fields.update(['expected_return_date', 'note'])
+            return any(field in editable_fields for field in vals.keys())
+        elif self.state in ('confirmed', 'done', 'expired', 'cancel'):
+            # Very limited fields in later states
+            return all(field in editable_fields for field in vals.keys())
+        return True
+
+    def write(self, vals):
+        """Override write to implement state-based field access control"""
+        for record in self:
+            if not record._get_fields_write(vals):
+                raise UserError(_("You cannot modify this record in its current state."))
+        return super(StockGatePass, self).write(vals)
 
 
 class StockMove(models.Model):

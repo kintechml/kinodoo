@@ -54,11 +54,16 @@
             <field name="arch" type="xml">
                 <form string="Gate Pass">
                     <header>
-                        <button name="action_submit" states="draft" string="Submit" type="object" class="oe_highlight"/>
-                        <button name="action_confirm" states="submit" string="Confirm" type="object" class="oe_highlight" groups="stock_gatepass.group_gatepass_manager"/>
-                        <button name="action_create_return" states="confirmed" string="Create Return" type="object" attrs="{'invisible': [('is_returnable', '=', False)]}" class="oe_highlight"/>
-                        <button name="action_done" states="confirmed" string="Mark as Done" type="object" attrs="{'invisible': [('is_returnable', '=', True), ('returned', '=', False)]}" class="oe_highlight"/>
-                        <button name="action_cancel" states="draft,submit,confirmed" string="Cancel" type="object"/>
+                        <!-- Use conditional invisibility based on state instead of states attribute -->
+                        <field name="state" invisible="1"/>
+                        <field name="is_returnable" invisible="1"/>
+                        <field name="returned" invisible="1"/>
+
+                        <button name="action_submit" invisible="state != 'draft'" string="Submit" type="object" class="oe_highlight"/>
+                        <button name="action_confirm" invisible="state != 'submit'" string="Confirm" type="object" class="oe_highlight" groups="stock_gatepass.group_gatepass_manager"/>
+                        <button name="action_create_return" invisible="state != 'confirmed' or not is_returnable" string="Create Return" type="object" class="oe_highlight"/>
+                        <button name="action_done" invisible="state != 'confirmed' or (is_returnable and not returned)" string="Mark as Done" type="object" class="oe_highlight"/>
+                        <button name="action_cancel" invisible="state not in ('draft', 'submit', 'confirmed')" string="Cancel" type="object"/>
                         <field name="state" widget="statusbar" statusbar_visible="draft,submit,confirmed,done"/>
                     </header>
                     <sheet>
@@ -66,7 +71,7 @@
                             <button class="oe_stat_button" name="action_view_pickings" type="object" icon="fa-truck">
                                 <field name="picking_count" widget="statinfo" string="Pickings"/>
                             </button>
-                            <button class="oe_stat_button" name="action_view_returns" type="object" icon="fa-undo" attrs="{'invisible': [('is_returnable', '=', False)]}">
+                            <button class="oe_stat_button" name="action_view_returns" type="object" icon="fa-undo" invisible="not is_returnable">
                                 <field name="return_count" widget="statinfo" string="Returns"/>
                             </button>
                         </div>
@@ -85,11 +90,12 @@
                             </group>
                             <group>
                                 <field name="issue_date"/>
-                                <field name="expected_return_date" attrs="{'required': [('is_returnable', '=', True)], 'invisible': [('is_returnable', '=', False)]}"/>
-                                <field name="actual_return_date" readonly="1" attrs="{'invisible': [('actual_return_date', '=', False)]}"/>
+                                <!-- required is handled via model constraints -->
+                                <field name="expected_return_date" invisible="not is_returnable"/>
+                                <field name="actual_return_date" readonly="1" invisible="not actual_return_date"/>
                                 <field name="returned" invisible="1"/>
-                                <field name="approved_by" attrs="{'invisible': [('approved_by', '=', False)]}"/>
-                                <field name="approved_date" attrs="{'invisible': [('approved_date', '=', False)]}"/>
+                                <field name="approved_by" invisible="not approved_by"/>
+                                <field name="approved_date" invisible="not approved_date"/>
                             </group>
                         </group>
                         <notebook>
