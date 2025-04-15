@@ -28,8 +28,10 @@
     </p>
 </div>
             </field>
-            <field name="report_template" ref="stock_gatepass.action_report_gatepass"/>
-            <field name="report_name">GatePass_${(object.name or '').replace('/','_')}</field>
+            <!-- In Odoo 17, attachment generation is handled differently -->
+<!--            <field name="model_name">stock.gatepass</field>-->
+<!--            <field name="attachment_ids" eval="[(5, 0, 0)]"/>-->
+            <!-- The report can be attached using server actions or context actions instead -->
             <field name="lang">${object.partner_id.lang}</field>
             <field name="auto_delete" eval="True"/>
         </record>
