@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Add Gate Pass field to Stock Picking form -->
+        <record id="view_picking_form_gatepass" model="ir.ui.view">
+            <field name="name">stock.picking.form.gatepass</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='origin']" position="after">
+                    <field name="gatepass_id" attrs="{'invisible': [('gatepass_id', '=', False)]}"/>
+                    <field name="gatepass_return" invisible="1"/>
+                </xpath>
+                <xpath expr="//header" position="inside">
+                    <button name="action_create_gatepass" string="Create Gate Pass" type="object" 
+                            attrs="{'invisible': ['|', ('state', 'not in', ['draft', 'assigned', 'confirmed']), ('gatepass_id', '!=', False)]}"
+                            groups="stock_gatepass.group_gatepass_user"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Add Gate Pass column to Stock Picking tree -->
+        <record id="view_picking_tree_gatepass" model="ir.ui.view">
+            <field name="name">stock.picking.tree.gatepass</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.vpicktree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='origin']" position="after">
+                    <field name="gatepass_id" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Add Gate Pass filter to Stock Picking search -->
+        <record id="view_picking_search_gatepass" model="ir.ui.view">
+            <field name="name">stock.picking.search.gatepass</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='activities_upcoming_all']" position="after">
+                    <separator/>
+                    <filter string="With Gate Pass" name="with_gatepass" domain="[('gatepass_id', '!=', False)]"/>
+                    <filter string="Gate Pass Returns" name="gatepass_returns" domain="[('gatepass_return', '=', True)]"/>
+                </xpath>
+                <xpath expr="//group[@name='groupby']" position="inside">
+                    <filter string="Gate Pass" name="groupby_gatepass" domain="[]" context="{'group_by': 'gatepass_id'}"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_gatepass_return_wizard" model="ir.ui.view">
+            <field name="name">gatepass.return.wizard.form</field>
+            <field name="model">gatepass.return.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Return Gate Pass">
+                    <sheet>
+                        <p class="oe_grey">
+                            Specify the products you want to include in this return. You can select quantity to be returned for each product.
+                        </p>
+                        <group>
+                            <field name="gatepass_id" readonly="1"/>
+                            <field name="return_date"/>
+                        </group>
+                        <field name="product_return_moves">
+                            <tree editable="bottom">
+                                <field name="product_id" readonly="1"/>
+                                <field name="quantity"/>
+                                <field name="uom_id" readonly="1" groups="uom.group_uom"/>
+                                <field name="move_id" invisible="1"/>
+                            </tree>
+                        </field>
+                    </sheet>
+                    <footer>
+                        <button name="create_returns" string="Return" type="object" class="btn-primary"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

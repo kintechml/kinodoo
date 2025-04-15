@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Mail template for gate pass creation -->
+        <record id="mail_template_gatepass_created" model="mail.template">
+            <field name="name">Gate Pass: Creation Notification</field>
+            <field name="model_id" ref="model_stock_gatepass"/>
+            <field name="subject">Gate Pass Created: ${object.name}</field>
+            <field name="email_from">${(object.user_id.email_formatted or object.company_id.email or user.email_formatted) | safe}</field>
+            <field name="email_to">${object.partner_id.email_formatted | safe}</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+        Dear ${object.partner_id.name},
+        <br/><br/>
+        We are pleased to inform you that a gate pass has been created for you:
+        <br/><br/>
+        <strong>Gate Pass:</strong> ${object.name}<br/>
+        <strong>Type:</strong> ${object.gatepass_type_id.name}<br/>
+        <strong>Issue Date:</strong> ${format_date(object.issue_date)}<br/>
+        % if object.is_returnable:
+        <strong>Expected Return Date:</strong> ${format_date(object.expected_return_date)}<br/>
+        % endif
+        <br/>
+        You can find the details of the products in the attached gate pass document.
+        <br/><br/>
+        Thank you for your business.
+    </p>
+</div>
+            </field>
+            <field name="report_template" ref="action_report_gatepass"/>
+            <field name="report_name">GatePass_${(object.name or '').replace('/','_')}</field>
+            <field name="lang">${object.partner_id.lang}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Mail template for gate pass expiry warning -->
+        <record id="mail_template_gatepass_expiry" model="mail.template">
+            <field name="name">Gate Pass: Expiry Notification</field>
+            <field name="model_id" ref="model_stock_gatepass"/>
+            <field name="subject">Gate Pass ${object.name} - Expiry Warning</field>
+            <field name="email_from">${(object.user_id.email_formatted or object.company_id.email or user.email_formatted) | safe}</field>
+            <field name="email_to">${object.partner_id.email_formatted | safe}</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px;">
+    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+        Dear ${object.partner_id.name},
+        <br/><br/>
+        This is a reminder that your gate pass ${object.name} is approaching its expiry date.
+        <br/><br/>
+        <strong>Gate Pass:</strong> ${object.name}<br/>
+        <strong>Type:</strong> ${object.gatepass_type_id.name}<br/>
+        <strong>Expected Return Date:</strong> ${format_date(object.expected_return_date)}<br/>
+        <br/>
+        Please ensure to return the items before the expiry date to avoid any complications.
+        <br/><br/>
+        Thank you for your cooperation.
+    </p>
+</div>
+            </field>
+            <field name="lang">${object.partner_id.lang}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>

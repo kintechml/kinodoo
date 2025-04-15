@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Gate Pass Report -->
+        <record id="action_report_gatepass" model="ir.actions.report">
+            <field name="name">Gate Pass</field>
+            <field name="model">stock.gatepass</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">stock_gatepass.report_gatepass</field>
+            <field name="report_file">stock_gatepass.report_gatepass</field>
+            <field name="print_report_name">'Gate Pass - %s' % object.name</field>
+            <field name="binding_model_id" ref="model_stock_gatepass"/>
+            <field name="binding_type">report</field>
+        </record>
+    </data>
+</odoo>

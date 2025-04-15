@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_gatepass">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="oe_structure"/>
+                        <h2 class="text-center">
+                            <span t-if="o.state == 'draft'">DRAFT </span>
+                            <span>GATE PASS</span>
+                        </h2>
+                        
+                        <div class="row mt32 mb32">
+                            <div class="col-6">
+                                <strong>Gate Pass Number:</strong> <span t-field="o.name"/>
+                                <br/>
+                                <strong>Type:</strong> <span t-field="o.gatepass_type_id.name"/>
+                                <br/>
+                                <strong>Issue Date:</strong> <span t-field="o.issue_date"/>
+                                <br/>
+                                <t t-if="o.is_returnable">
+                                    <strong>Expected Return Date:</strong> <span t-field="o.expected_return_date"/>
+                                    <br/>
+                                </t>
+                                <strong>Status:</strong> <span t-field="o.state"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Partner:</strong> <span t-field="o.partner_id"/>
+                                <br/>
+                                <strong>Address:</strong>
+                                <div t-field="o.partner_id" t-options="{&quot;widget&quot;: &quot;contact&quot;, &quot;fields&quot;: [&quot;address&quot;], &quot;no_marker&quot;: True}"/>
+                                <br/>
+                                <strong>Responsible:</strong> <span t-field="o.user_id"/>
+                            </div>
+                        </div>
+                        
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-right">Quantity</th>
+                                    <th groups="uom.group_uom">UoM</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.move_ids" t-as="line">
+                                    <td>
+                                        <span t-field="line.product_id.name"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-field="line.product_uom_qty"/>
+                                    </td>
+                                    <td groups="uom.group_uom">
+                                        <span t-field="line.product_uom.name"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div t-if="o.note" class="mt16">
+                            <strong>Notes:</strong>
+                            <p t-field="o.note"/>
+                        </div>
+                        
+                        <div class="row mt64">
+                            <div class="col-4 text-center">
+                                <p>____________________</p>
+                                <p>Security</p>
+                            </div>
+                            <div class="col-4 text-center">
+                                <p>____________________</p>
+                                <p>Authorized By</p>
+                            </div>
+                            <div class="col-4 text-center">
+                                <p>____________________</p>
+                                <p>Received By</p>
+                            </div>
+                        </div>
+                        
+                        <div class="oe_structure"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
