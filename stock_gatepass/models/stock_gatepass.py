@@ -39,9 +39,7 @@ class StockGatePass(models.Model):
     partner_id = fields.Many2one('res.partner', 'Partner', required=True)
     user_id = fields.Many2one('res.users', 'Responsible', default=lambda self: self.env.user)
     company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
-    source_location_id = fields.Many2one('stock.location', 'Source Location', required=True,
-                                         domain=[('usage', '=', 'internal')])
-    destination_location_id = fields.Many2one('stock.location', 'Destination Location', required=True)
+    warehouse_id = fields.Many2one('stock.warehouse', 'Warehouse', required=True)
     issue_date = fields.Date('Issue Date', default=fields.Date.context_today)
     expected_return_date = fields.Date('Expected Return Date')
     actual_return_date = fields.Date('Actual Return Date', readonly=True)
@@ -49,7 +47,7 @@ class StockGatePass(models.Model):
         ('ship', 'Deliver each product when available'),
         ('direct', 'Deliver all products at once')],
         string='Shipping Policy', required=True, default='direct')
-    move_ids = fields.One2many('stock.move', 'gatepass_id', 'Stock Moves')
+    line_ids = fields.One2many('stock.gatepass.line', 'gatepass_id', 'Products')
     picking_ids = fields.One2many('stock.picking', 'gatepass_id', 'Stock Pickings')
     picking_count = fields.Integer('Pickings', compute='_compute_picking_count')
     return_count = fields.Integer('Returns', compute='_compute_return_count')
@@ -63,12 +61,7 @@ class StockGatePass(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.gatepass') or _('New')
-            if not vals.get('destination_location_id', False):
-                vals['destination_location_id'] = self.env['stock.location'].search([('usage', '=', 'customer')], limit=1).id
-            print(vals.get('move_ids', []))
-            for move in vals.get('move_ids', []):
-                move[2]['location_id'] = vals.get('source_location_id', False)
-                move[2]['location_dest_id'] = vals.get('destination_location_id', False)
+                vals['warehouse_id'] = self.env['stock.warehouse'].search([], limit=1).id
 
         return super(StockGatePass, self).create(vals_list)
 
@@ -110,19 +103,16 @@ class StockGatePass(models.Model):
 
     def action_submit(self):
         for gatepass in self:
-            if not gatepass.move_ids:
+            if not gatepass.line_ids:
                 raise UserError(_('Please add at least one product to continue.'))
             gatepass.write({'state': 'submit'})
 
-    def create_delivery_order(self, gatepass):
+    def _create_delivery_order(self, gatepass):
         picking_vals = {
             'partner_id': gatepass.partner_id.id,
-            'picking_type_id': self.env['stock.picking.type'].search([
-                ('code', '=', 'outgoing'),
-                ('warehouse_id.company_id', '=', gatepass.company_id.id)
-            ], limit=1).id,
-            'location_id': gatepass.source_location_id.id,
-            'location_dest_id': gatepass.destination_location_id.id,
+            'picking_type_id': gatepass.warehouse_id.out_type_id.id,
+            'location_id': gatepass.warehouse_id.out_type_id.default_location_src_id.id,
+            'location_dest_id': self.env['stock.location'].search([('usage', '=', 'customer')], limit=1).id,
             'gatepass_id': gatepass.id,
             'scheduled_date': fields.Datetime.now(),
             'origin': gatepass.name,
@@ -130,56 +120,24 @@ class StockGatePass(models.Model):
         picking = self.env['stock.picking'].create(picking_vals)
 
         # Create stock moves for each product in the gate pass
-        for move in gatepass.move_ids:
+        for line in gatepass.line_ids:
             self.env['stock.move'].create({
-                'name': move.product_id.name,
-                'product_id': move.product_id.id,
-                'product_uom_qty': move.product_uom_qty,
-                'product_uom': move.product_uom.id,
+                'name': line.product_id.name,
+                'product_id': line.product_id.id,
+                'product_uom_qty': line.product_uom_qty,
+                'product_uom': line.product_uom.id,
                 'picking_id': picking.id,
-                'location_id': gatepass.source_location_id.id,
-                'location_dest_id': gatepass.destination_location_id.id,
-                'gatepass_id': gatepass.id,
-            })
-
-    def create_incoming_shipment(self, gatepass):
-        picking_vals = {
-            'partner_id': gatepass.partner_id.id,
-            'picking_type_id': self.env['stock.picking.type'].search([
-                ('code', '=', 'incoming'),
-                ('warehouse_id.company_id', '=', gatepass.company_id.id)
-            ], limit=1).id,
-            'location_id': gatepass.destination_location_id.id,
-            'location_dest_id': gatepass.source_location_id.id,
-            'gatepass_id': gatepass.id,
-            'scheduled_date': fields.Datetime.now(),
-            'origin': gatepass.name,
-        }
-        picking = self.env['stock.picking'].create(picking_vals)
-
-        # Create stock moves for each product in the gate pass
-        for move in gatepass.move_ids:
-            self.env['stock.move'].create({
-                'name': move.product_id.name,
-                'product_id': move.product_id.id,
-                'product_uom_qty': move.product_uom_qty,
-                'product_uom': move.product_uom.id,
-                'picking_id': picking.id,
-                'location_id': gatepass.destination_location_id.id,
-                'location_dest_id': gatepass.source_location_id.id,
-                'gatepass_id': gatepass.id,
+                'location_id': picking.location_id.id,
+                'location_dest_id': picking.location_dest_id.id
             })
 
     def action_confirm(self):
         for gatepass in self:
-            if not gatepass.move_ids:
+            if not gatepass.line_ids:
                 raise UserError(_('Please add at least one product to continue.'))
 
             if not gatepass.picking_ids:
-                self.create_delivery_order(gatepass)
-
-            if gatepass.gatepass_type_id and gatepass.gatepass_type_id.is_returnable:
-                self.create_incoming_shipment(gatepass)
+                self._create_delivery_order(gatepass)
 
             gatepass.write({
                 'state': 'confirmed',
@@ -240,8 +198,25 @@ class StockGatePass(models.Model):
             if record.is_returnable and not record.expected_return_date:
                 raise ValidationError(_("Expected return date is required for returnable gate passes."))
 
+class GatePassLine(models.Model):
+    _name = 'stock.gatepass.line'
+    _description = 'Gate Pass Line'
+    _order = 'id'
 
-class StockMove(models.Model):
-    _inherit = 'stock.move'
+    name = fields.Char('Description')
+    gatepass_id = fields.Many2one('stock.gatepass', 'Gate Pass', required=True, ondelete='cascade')
+    product_id = fields.Many2one('product.product', 'Product', required=True)
+    product_uom_qty = fields.Float('Quantity', digits='Product Unit of Measure', required=True, default=1.0)
+    product_uom = fields.Many2one('uom.uom', 'Unit of Measure', required=True,
+                                  domain="[('category_id', '=', product_uom_category_id)]")
+    product_uom_category_id = fields.Many2one(related='product_id.uom_id.category_id')
+    returned_qty = fields.Float('Returned Quantity', digits='Product Unit of Measure', default=0.0)
+    state = fields.Selection(related='gatepass_id.state', store=True)
+    company_id = fields.Many2one(related='gatepass_id.company_id', store=True)
 
-    gatepass_id = fields.Many2one('stock.gatepass', 'Gate Pass')
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        if self.product_id:
+            self.name = self.product_id.name
+            if not self.product_uom or self.product_id.uom_id.category_id.id != self.product_uom.category_id.id:
+                self.product_uom = self.product_id.uom_id.id

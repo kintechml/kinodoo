@@ -44,7 +44,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr t-foreach="o.move_ids" t-as="line">
+                                <tr t-foreach="o.line_ids" t-as="line">
                                     <td>
                                         <span t-field="line.product_id.name"/>
                                     </td>

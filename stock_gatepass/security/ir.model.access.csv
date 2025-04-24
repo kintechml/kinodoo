@@ -3,3 +3,9 @@ access_stock_gatepass_user,stock.gatepass.user,model_stock_gatepass,group_gatepa
 access_stock_gatepass_manager,stock.gatepass.manager,model_stock_gatepass,group_gatepass_manager,1,1,1,1
 access_stock_gatepass_type_user,stock.gatepass.type.user,model_stock_gatepass_type,group_gatepass_user,1,0,0,0
 access_stock_gatepass_type_manager,stock.gatepass.type.manager,model_stock_gatepass_type,group_gatepass_manager,1,1,1,1
+access_stock_gatepass_line_user,stock.gatepass.line.user,model_stock_gatepass_line,group_gatepass_user,1,1,1,0
+access_stock_gatepass_line_manager,stock.gatepass.line.manager,model_stock_gatepass_line,group_gatepass_manager,1,1,1,1
+access_gatepass_return_line_user,gatepass.line.user,model_gatepass_return_line,group_gatepass_user,1,1,1,1
+access_gatepass_return_line_manager,gatepass.line.manager,model_gatepass_return_line,group_gatepass_manager,1,1,1,1
+access_gatepass_return_wizard_user,gatepass.wizard.user,model_gatepass_return_wizard,group_gatepass_user,1,1,1,1
+access_gatepass_return_wizard_manager,gatepass.wizard.manager,model_gatepass_return_wizard,group_gatepass_manager,1,1,1,1

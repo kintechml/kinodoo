@@ -18,8 +18,8 @@
                             <tree editable="bottom">
                                 <field name="product_id" readonly="1"/>
                                 <field name="quantity"/>
-                                <field name="uom_id" readonly="1" groups="uom.group_uom"/>
-                                <field name="move_id" invisible="1"/>
+                                <field name="uom_id" groups="uom.group_uom"/>
+                                <field name="line_id" invisible="1"/>
                             </tree>
                         </field>
                     </sheet>

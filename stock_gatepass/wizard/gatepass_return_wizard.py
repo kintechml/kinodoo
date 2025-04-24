@@ -10,7 +10,7 @@ class GatepassReturnWizard(models.TransientModel):
     gatepass_id = fields.Many2one('stock.gatepass', string='Gate Pass', required=True)
     return_date = fields.Date(string='Return Date', default=fields.Date.context_today, required=True)
     product_return_moves = fields.One2many('gatepass.return.line', 'wizard_id', string='Products to Return')
-    
+
     @api.model
     def default_get(self, fields):
         res = super(GatepassReturnWizard, self).default_get(fields)
@@ -23,48 +23,47 @@ class GatepassReturnWizard(models.TransientModel):
                 raise UserError(_('This gate pass is not returnable.'))
             if gatepass.returned:
                 raise UserError(_('This gate pass has already been returned.'))
-                
+
             if 'gatepass_id' in fields:
                 res['gatepass_id'] = gatepass_id
-                
+
             if 'product_return_moves' in fields:
                 product_return_moves = []
-                for move in gatepass.move_ids:
-                    product_return_moves.append((0, 0, {
-                        'product_id': move.product_id.id,
-                        'quantity': move.product_uom_qty,
-                        'uom_id': move.product_uom.id,
-                        'move_id': move.id,
-                    }))
+                for line in gatepass.line_ids:
+                    # Calculate remaining quantity to return (original - already returned)
+                    remaining_qty = line.product_uom_qty - line.returned_qty
+                    if remaining_qty > 0:
+                        product_return_moves.append((0, 0, {
+                            'quantity': remaining_qty,
+                            'uom_id': line.product_uom.id,
+                            'line_id': line.id,
+                        }))
                 res['product_return_moves'] = product_return_moves
-                
+
         return res
-    
+
     def _prepare_return_picking(self, gatepass):
         return {
             'partner_id': gatepass.partner_id.id,
-            'picking_type_id': self.env['stock.picking.type'].search([
-                ('code', '=', 'incoming'),
-                ('warehouse_id.company_id', '=', gatepass.company_id.id)
-            ], limit=1).id,
-            'location_id': gatepass.destination_location_id.id,
-            'location_dest_id': gatepass.source_location_id.id,
+            'picking_type_id': gatepass.warehouse_id.out_type_id.return_picking_type_id.id,
+            'location_id': self.env['stock.location'].search([('usage', '=', 'customer')], limit=1).id,
+            'location_dest_id': gatepass.warehouse_id.out_type_id.return_picking_type_id.default_location_dest_id.id,
             'gatepass_id': gatepass.id,
             'gatepass_return': True,
             'origin': _("Return of %s") % gatepass.name,
             'scheduled_date': fields.Datetime.now(),
         }
-    
+
     def create_returns(self):
         for wizard in self:
             # Check if any quantities are greater than zero
             if not any(line.quantity > 0 for line in wizard.product_return_moves):
                 raise UserError(_('Please specify at least one product to return.'))
-                
+
             gatepass = wizard.gatepass_id
             picking_vals = self._prepare_return_picking(gatepass)
             picking = self.env['stock.picking'].create(picking_vals)
-            
+
             # Create stock moves for each product being returned
             for line in wizard.product_return_moves.filtered(lambda l: l.quantity > 0):
                 self.env['stock.move'].create({
@@ -73,21 +72,29 @@ class GatepassReturnWizard(models.TransientModel):
                     'product_uom_qty': line.quantity,
                     'product_uom': line.uom_id.id,
                     'picking_id': picking.id,
-                    'location_id': gatepass.destination_location_id.id,
-                    'location_dest_id': gatepass.source_location_id.id,
-                    'gatepass_id': gatepass.id,
+                    'location_id': self.env['stock.location'].search([('usage', '=', 'customer')], limit=1).id,
+                    'location_dest_id': gatepass.warehouse_id.out_type_id.return_picking_type_id.default_location_dest_id.id
                 })
-            
-            # If all products are being returned fully, mark the gatepass as returned
-            total_qty_returned = sum(line.quantity for line in wizard.product_return_moves)
-            total_qty_sent = sum(move.product_uom_qty for move in gatepass.move_ids)
-            
-            if total_qty_returned >= total_qty_sent:
+
+            # Update the returned_qty on each gate pass line and check if fully returned
+            for return_line in wizard.product_return_moves:
+                if return_line.line_id and return_line.quantity > 0:
+                    return_line.line_id.write({
+                        'returned_qty': return_line.line_id.returned_qty + return_line.quantity
+                    })
+
+            # Check if all products have been returned
+            all_returned = all(
+                line.returned_qty >= line.product_uom_qty
+                for line in gatepass.line_ids
+            )
+
+            if all_returned:
                 gatepass.write({
                     'returned': True,
                     'actual_return_date': wizard.return_date
                 })
-            
+
             # Show the created picking
             action = {
                 'name': _('Return Picking'),
@@ -104,7 +111,7 @@ class GatepassReturnLine(models.TransientModel):
     _description = 'Gate Pass Return Line'
 
     wizard_id = fields.Many2one('gatepass.return.wizard', string='Wizard')
-    product_id = fields.Many2one('product.product', string='Product', required=True)
+    product_id = fields.Many2one(related='line_id.product_id', string='Product')
     quantity = fields.Float('Quantity', digits='Product Unit of Measure', required=True)
     uom_id = fields.Many2one('uom.uom', string='Unit of Measure', required=True)
-    move_id = fields.Many2one('stock.move', string='Stock Move')
+    line_id = fields.Many2one('stock.gatepass.line', string='Gate Pass Line')
