@@ -63,6 +63,13 @@ class StockGatePass(models.Model):
         for vals in vals_list:
             if vals.get('name', _('New')) == _('New'):
                 vals['name'] = self.env['ir.sequence'].next_by_code('stock.gatepass') or _('New')
+            if not vals.get('destination_location_id', False):
+                vals['destination_location_id'] = self.env['stock.location'].search([('usage', '=', 'customer')], limit=1).id
+            print(vals.get('move_ids', []))
+            for move in vals.get('move_ids', []):
+                move[2]['location_id'] = vals.get('source_location_id', False)
+                move[2]['location_dest_id'] = vals.get('destination_location_id', False)
+
         return super(StockGatePass, self).create(vals_list)
 
     def _compute_picking_count(self):
@@ -107,38 +114,72 @@ class StockGatePass(models.Model):
                 raise UserError(_('Please add at least one product to continue.'))
             gatepass.write({'state': 'submit'})
 
+    def create_delivery_order(self, gatepass):
+        picking_vals = {
+            'partner_id': gatepass.partner_id.id,
+            'picking_type_id': self.env['stock.picking.type'].search([
+                ('code', '=', 'outgoing'),
+                ('warehouse_id.company_id', '=', gatepass.company_id.id)
+            ], limit=1).id,
+            'location_id': gatepass.source_location_id.id,
+            'location_dest_id': gatepass.destination_location_id.id,
+            'gatepass_id': gatepass.id,
+            'scheduled_date': fields.Datetime.now(),
+            'origin': gatepass.name,
+        }
+        picking = self.env['stock.picking'].create(picking_vals)
+
+        # Create stock moves for each product in the gate pass
+        for move in gatepass.move_ids:
+            self.env['stock.move'].create({
+                'name': move.product_id.name,
+                'product_id': move.product_id.id,
+                'product_uom_qty': move.product_uom_qty,
+                'product_uom': move.product_uom.id,
+                'picking_id': picking.id,
+                'location_id': gatepass.source_location_id.id,
+                'location_dest_id': gatepass.destination_location_id.id,
+                'gatepass_id': gatepass.id,
+            })
+
+    def create_incoming_shipment(self, gatepass):
+        picking_vals = {
+            'partner_id': gatepass.partner_id.id,
+            'picking_type_id': self.env['stock.picking.type'].search([
+                ('code', '=', 'incoming'),
+                ('warehouse_id.company_id', '=', gatepass.company_id.id)
+            ], limit=1).id,
+            'location_id': gatepass.destination_location_id.id,
+            'location_dest_id': gatepass.source_location_id.id,
+            'gatepass_id': gatepass.id,
+            'scheduled_date': fields.Datetime.now(),
+            'origin': gatepass.name,
+        }
+        picking = self.env['stock.picking'].create(picking_vals)
+
+        # Create stock moves for each product in the gate pass
+        for move in gatepass.move_ids:
+            self.env['stock.move'].create({
+                'name': move.product_id.name,
+                'product_id': move.product_id.id,
+                'product_uom_qty': move.product_uom_qty,
+                'product_uom': move.product_uom.id,
+                'picking_id': picking.id,
+                'location_id': gatepass.destination_location_id.id,
+                'location_dest_id': gatepass.source_location_id.id,
+                'gatepass_id': gatepass.id,
+            })
+
     def action_confirm(self):
         for gatepass in self:
             if not gatepass.move_ids:
                 raise UserError(_('Please add at least one product to continue.'))
 
-            # Create picking for delivery
-            picking_vals = {
-                'partner_id': gatepass.partner_id.id,
-                'picking_type_id': self.env['stock.picking.type'].search([
-                    ('code', '=', 'outgoing'),
-                    ('warehouse_id.company_id', '=', gatepass.company_id.id)
-                ], limit=1).id,
-                'location_id': gatepass.source_location_id.id,
-                'location_dest_id': gatepass.destination_location_id.id,
-                'gatepass_id': gatepass.id,
-                'scheduled_date': fields.Datetime.now(),
-                'origin': gatepass.name,
-            }
-            picking = self.env['stock.picking'].create(picking_vals)
+            if not gatepass.picking_ids:
+                self.create_delivery_order(gatepass)
 
-            # Create stock moves for each product in the gate pass
-            for move in gatepass.move_ids:
-                self.env['stock.move'].create({
-                    'name': move.product_id.name,
-                    'product_id': move.product_id.id,
-                    'product_uom_qty': move.product_uom_qty,
-                    'product_uom': move.product_uom.id,
-                    'picking_id': picking.id,
-                    'location_id': gatepass.source_location_id.id,
-                    'location_dest_id': gatepass.destination_location_id.id,
-                    'gatepass_id': gatepass.id,
-                })
+            if gatepass.gatepass_type_id and gatepass.gatepass_type_id.is_returnable:
+                self.create_incoming_shipment(gatepass)
 
             gatepass.write({
                 'state': 'confirmed',
@@ -198,28 +239,6 @@ class StockGatePass(models.Model):
         for record in self:
             if record.is_returnable and not record.expected_return_date:
                 raise ValidationError(_("Expected return date is required for returnable gate passes."))
-
-    def _get_fields_write(self, vals):
-        """Implement field-level access control based on state"""
-        editable_fields = set(['message_follower_ids', 'activity_ids'])
-        if self.state == 'draft':
-            # In draft state all fields are editable
-            return True
-        elif self.state == 'submit':
-            # Limited fields are editable in submitted state
-            editable_fields.update(['expected_return_date', 'note'])
-            return any(field in editable_fields for field in vals.keys())
-        elif self.state in ('confirmed', 'done', 'expired', 'cancel'):
-            # Very limited fields in later states
-            return all(field in editable_fields for field in vals.keys())
-        return True
-
-    def write(self, vals):
-        """Override write to implement state-based field access control"""
-        for record in self:
-            if not record._get_fields_write(vals):
-                raise UserError(_("You cannot modify this record in its current state."))
-        return super(StockGatePass, self).write(vals)
 
 
 class StockMove(models.Model):

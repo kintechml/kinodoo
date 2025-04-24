@@ -25,6 +25,7 @@ This module allows you to manage gate passes for:
         'security/gatepass_security.xml',
         'security/ir.model.access.csv',
         'data/gatepass_sequence.xml',
+        'data/stock_gatepass_data.xml',
         'report/gatepass_report.xml',
         'report/gatepass_report_template.xml',
         'data/mail_template_data.xml',

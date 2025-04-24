@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Gate Pass Types -->
+        <record id="gate_pass_type_1" model="stock.gatepass.type">
+            <field name="name">Sales Delivery</field>
+            <field name="code">Sales Delivery</field>
+            <field name="is_returnable">False</field>
+            <field name="active">True</field>
+            <field name="note">Gate pass for regular sales delivery</field>
+        </record>
+
+        <record id="gate_pass_type_2" model="stock.gatepass.type">
+            <field name="name">Returnable Sales Delivery</field>
+            <field name="code">Returnable Sales Delivery</field>
+            <field name="is_returnable">True</field>
+            <field name="active">True</field>
+            <field name="note">Gate pass for sales delivery with expected return</field>
+        </record>
+
+        <record id="gate_pass_type_3" model="stock.gatepass.type">
+            <field name="name">Cylinders Return</field>
+            <field name="code">Cylinders Return</field>
+            <field name="is_returnable">False</field>
+            <field name="active">True</field>
+            <field name="note">Gate pass for cylinders return</field>
+        </record>
+
+        <record id="gate_pass_type_4" model="stock.gatepass.type">
+            <field name="name">Returnable Cylinders</field>
+            <field name="code">Returnable Cylinders</field>
+            <field name="is_returnable">True</field>
+            <field name="active">True</field>
+            <field name="note">Gate pass for cylinders that need to be returned</field>
+        </record>
+
+        <record id="gate_pass_type_5" model="stock.gatepass.type">
+            <field name="name">Repairing at Supplier Location</field>
+            <field name="code">Repairing at Supplier Location</field>
+            <field name="is_returnable">True</field>
+            <field name="active">True</field>
+            <field name="note">Gate pass for materials sent for repair at supplier location</field>
+        </record>
+
+        <!-- Gatepass-related subtypes for messaging / Chatter -->
+        <record id="mt_gatepass_pending" model="mail.message.subtype">
+            <field name="name">Pending</field>
+            <field name="res_model">stock.gatepass</field>
+            <field name="description">Gatepass is pending</field>
+            <field name="default" eval="True"/>
+        </record>
+
+        <record id="mt_gatepass_done" model="mail.message.subtype">
+            <field name="name">Done</field>
+            <field name="res_model">stock.gatepass</field>
+            <field name="description">Gatepass is done</field>
+            <field name="default" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

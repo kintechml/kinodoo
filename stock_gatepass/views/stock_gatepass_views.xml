@@ -85,6 +85,7 @@
                                 <field name="gatepass_type_id" options="{'no_create': True}"/>
                                 <field name="is_returnable" invisible="1"/>
                                 <field name="partner_id"/>
+                                <field name="source_location_id"/>
                                 <field name="user_id"/>
                                 <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
                             </group>

@@ -52,6 +52,8 @@ class StockPicking(models.Model):
                 'product_id': move.product_id.id,
                 'product_uom_qty': move.product_uom_qty,
                 'product_uom': move.product_uom.id,
+                'location_id': move.location_id.id,
+                'location_dest_id': move.location_dest_id.id,
                 'gatepass_id': gatepass.id,
             })
             
