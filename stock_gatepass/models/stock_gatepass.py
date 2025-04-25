@@ -18,7 +18,6 @@ class GatePassType(models.Model):
                                  default=lambda self: self.env.company)
     note = fields.Text('Description')
 
-
 class StockGatePass(models.Model):
     _name = 'stock.gatepass'
     _description = 'Stock Gate Pass'

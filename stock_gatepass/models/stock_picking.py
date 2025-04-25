@@ -11,12 +11,14 @@ class StockPicking(models.Model):
         result = super(StockPicking, self).button_validate()
         for picking in self:
             if picking.gatepass_id and picking.gatepass_return:
-                picking.gatepass_id.write({
-                    'returned': True,
-                    'actual_return_date': fields.Date.context_today(self)
-                })
-                if picking.gatepass_id.state not in ['done', 'cancel']:
-                    picking.gatepass_id.action_done()
+                all_returned = all(line.returned_qty >= line.product_uom_qty for line in picking.gatepass_id.line_ids)
+                if all_returned:
+                    picking.gatepass_id.write({
+                        'returned': True,
+                        'actual_return_date': fields.Date.context_today(self)
+                    })
+                    if picking.gatepass_id.state not in ['done', 'cancel']:
+                        picking.gatepass_id.action_done()
         return result
 
     def action_create_gatepass(self):

@@ -84,26 +84,26 @@
                             <group>
                                 <field name="gatepass_type_id" options="{'no_create': True}"/>
                                 <field name="is_returnable" invisible="1"/>
-                                <field name="partner_id"/>
-                                <field name="warehouse_id"/>
-                                <field name="user_id"/>
-                                <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
+                                <field name="partner_id" readonly="state in ('confirmed', 'done')"/>
+                                <field name="warehouse_id" readonly="state in ('confirmed', 'done')"/>
+                                <field name="user_id" readonly="state in ('confirmed', 'done')"/>
+                                <field name="company_id"  readonly="state in ('confirmed', 'done')" groups="base.group_multi_company" options="{'no_create': True}"/>
                             </group>
                             <group>
-                                <field name="issue_date"/>
+                                <field name="issue_date" readonly="state in ('confirmed', 'done')"/>
                                 <!-- required is handled via model constraints -->
-                                <field name="expected_return_date" invisible="not is_returnable"/>
+                                <field name="expected_return_date" readonly="state in ('confirmed', 'done')" invisible="not is_returnable"/>
                                 <field name="actual_return_date" readonly="1" invisible="not actual_return_date"/>
                                 <field name="returned" invisible="1"/>
-                                <field name="approved_by" invisible="not approved_by"/>
-                                <field name="approved_date" invisible="not approved_date"/>
+                                <field name="approved_by" readonly="1" invisible="not approved_by"/>
+                                <field name="approved_date" readonly="1" invisible="not approved_date"/>
                             </group>
                         </group>
                         <notebook>
                             <page string="Products">
                                 <!-- Company ID needed for product_id domain -->
                                 <field name="company_id" invisible="1"/>
-                                <field name="line_ids" widget="one2many_list" mode="tree,kanban">
+                                <field name="line_ids" readonly="state in ('confirmed', 'done', 'cancel')" widget="one2many_list" mode="tree,kanban">
                                     <tree string="Products" editable="bottom">
                                         <field name="product_id" context="{'default_company_id': parent.company_id}"/>
                                         <field name="product_uom_qty"/>

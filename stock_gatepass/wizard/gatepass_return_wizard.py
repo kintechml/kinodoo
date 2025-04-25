@@ -84,10 +84,7 @@ class GatepassReturnWizard(models.TransientModel):
                     })
 
             # Check if all products have been returned
-            all_returned = all(
-                line.returned_qty >= line.product_uom_qty
-                for line in gatepass.line_ids
-            )
+            all_returned = all(line.returned_qty >= line.product_uom_qty for line in gatepass.line_ids)
 
             if all_returned:
                 gatepass.write({
@@ -104,7 +101,6 @@ class GatepassReturnWizard(models.TransientModel):
                 'res_id': picking.id,
             }
             return action
-
 
 class GatepassReturnLine(models.TransientModel):
     _name = 'gatepass.return.line'
