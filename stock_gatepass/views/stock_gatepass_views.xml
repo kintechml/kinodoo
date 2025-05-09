@@ -106,9 +106,9 @@
                                 <field name="line_ids" readonly="state in ('confirmed', 'done', 'cancel')" widget="one2many_list" mode="tree,kanban">
                                     <tree string="Products" editable="bottom">
                                         <field name="product_id" context="{'default_company_id': parent.company_id}"/>
+                                        <field name="name"/>
                                         <field name="product_uom_qty"/>
                                         <field name="product_uom" groups="uom.group_uom"/>
-                                        <field name="name" optional="hide"/>
                                         <field name="returned_qty" readonly="1"/>
                                         <field name="company_id" invisible="1"/>
                                         <field name="product_uom_category_id" invisible="1"/>

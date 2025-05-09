@@ -46,7 +46,7 @@
                             <tbody>
                                 <tr t-foreach="o.line_ids" t-as="line">
                                     <td>
-                                        <span t-field="line.product_id.name"/>
+                                        <span t-field="line.name"/>
                                     </td>
                                     <td class="text-right">
                                         <span t-field="line.product_uom_qty"/>
@@ -64,15 +64,19 @@
                         </div>
                         
                         <div class="row mt64">
-                            <div class="col-4 text-center">
+                            <div class="col-3 text-center">
                                 <p>____________________</p>
-                                <p>Security</p>
+                                <p>Prepared By</p>
                             </div>
-                            <div class="col-4 text-center">
+                            <div class="col-3 text-center">
+                                <p>____________________</p>
+                                <p>Inspected By</p>
+                            </div>
+                            <div class="col-3 text-center">
                                 <p>____________________</p>
                                 <p>Authorized By</p>
                             </div>
-                            <div class="col-4 text-center">
+                            <div class="col-3 text-center">
                                 <p>____________________</p>
                                 <p>Received By</p>
                             </div>
